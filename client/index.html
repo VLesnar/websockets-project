@@ -4,223 +4,245 @@
   <title>Canvas Syncing II</title>
   <meta charset="utf-8"/>
   <style>
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding:0;
-      }
-      
-      canvas {
-        margin: 10px;
-        border: 1px solid black;
-      }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding:0;
+    }
     
+    canvas {
+      margin: 10px;
+      border: 1px solid black;
+    }
+  
     form {
       margin: 10px;
     }
-      
-      .hidden {
-        display: none;
-      }
+    
+    .hidden {
+      display: none;
+    }
   </style>
 	<script src="/socket.io/socket.io.js"></script>
-    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
-    <script type="text/babel" >
-        "use strict";
+  <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+  <script type="text/babel" >
+    "use strict";
 
-        let canvas;
-        let ctx;
-        let avatar;
-        let groundImage;
-        let chatbox;
-        let socket;
-        let hash;
-        let squares = {};
-        let texts = {};
-        let count = 0;
+    let canvas;
+    let ctx;
+    let avatar;
+    let groundImage;
+    let chatbox;
+    let socket;
+    let hash;
+    let squares = {};
+    let texts = {};
+    let count = 0;
 
-        const update = (data) => {
-          if(!squares[data.hash]) {
-            squares[data.hash] = data;
-            return;
-          }
-          
-          if(squares[data.hash].lastUpdate >= data.lastUpdate) {
-            return;
-          }
-          
-          const square = squares[data.hash];
-          square.lastUpdate = data.lastUpdate;
-          square.prevX = data.prevX;
-          square.prevY = data.prevY;
-          square.destX = data.destX;
-          square.destY = data.destY;
-          square.alpha = 0;
-          square.moveLeft = data.moveLeft;
-          square.moveRight = data.moveRight;
-          square.moveUp = data.moveUp;
-          square.moveDown = data.moveDown;
-        };
+    const update = (data) => {
+      if(!squares[data.hash]) {
+        squares[data.hash] = data;
+        return;
+      }
+      
+      if(squares[data.hash].lastUpdate >= data.lastUpdate) {
+        return;
+      }
+      
+      const square = squares[data.hash];
+      square.lastUpdate = data.lastUpdate;
+      square.prevX = data.prevX;
+      square.prevY = data.prevY;
+      square.destX = data.destX;
+      square.destY = data.destY;
+      square.alpha = 0;
+      square.moveLeft = data.moveLeft;
+      square.moveRight = data.moveRight;
+      square.moveUp = data.moveUp;
+      square.moveDown = data.moveDown;
+    };
 
-        const setUser = (data) => {
-          hash = data.hash;
-          squares[hash] = data;
-          requestAnimationFrame(redraw);
-        };
+    const setUser = (data) => {
+      hash = data.hash;
+      squares[hash] = data;
+      requestAnimationFrame(redraw);
+    };
 
-        const removeUser = (hash) => {
-          if(squares[hash]) {
-            delete squares[hash];
-          }
-        };
+    const removeUser = (hash) => {
+      if(squares[hash]) {
+        delete squares[hash];
+      }
+    };
 
-        const lerp = (v0, v1, alpha) => {
-          return (1 - alpha) * v0 + alpha * v1;
-        };
+    const lerp = (v0, v1, alpha) => {
+      return (1 - alpha) * v0 + alpha * v1;
+    };
 
-        const updatePosition = () => {
-          const square = squares[hash];
-          
-          square.prevX = square.x;
-          square.prevY = square.y;
-          
-          if(square.moveLeft && square.destX > 0) {
-            square.destX -= 3;
-          }
-          if(square.moveRight && square.destX < 600) {
-            square.destX += 3;
-          }
-          if(square.moveUp && square.destY > 0) {
-            square.destY -= 3;
-          }
-          if(square.moveDown && square.destY < 600) {
-            square.destY += 3;
-          }
-          
-          square.alpha = 0;
-          
-          socket.emit('movementUpdate', square);
-        };
+    const updatePosition = () => {
+      const square = squares[hash];
+      
+      square.prevX = square.x;
+      square.prevY = square.y;
+      
+      if(square.moveLeft && square.destX > 0) {
+        square.destX -= 3;
+      }
+      if(square.moveRight && square.destX < 600) {
+        square.destX += 3;
+      }
+      if(square.moveUp && square.destY > 0) {
+        square.destY -= 3;
+      }
+      if(square.moveDown && square.destY < 600) {
+        square.destY += 3;
+      }
+      
+      square.alpha = 0;
+      
+      socket.emit('movementUpdate', square);
+    };
 
-        const updateText = (data) => {
-          if(count > 9) {
-            count = 0;
-          }
-          texts[count] = data;
-          count++;
-        };
+    const updateText = (data) => {
+      if(count > 9) {
+        count = 0;
+      }
+      texts[count] = data;
+      count++;
+    };
 
-        const redraw = (time) => {
-          updatePosition();
-          
-          ctx.clearRect(0, 0, 600, 600);
-          ctx.filter = "none";
-          ctx.drawImage(groundImage, 0, 0);
-          
-          const keys = Object.keys(squares);
-          
-          for(let i = 0; i < keys.length; i++) {
-            const square = squares[keys[i]];
-            
-            if(square.alpha < 1) {
-              square.alpha += 0.05;
-            }
-            
-            if(square.hash === hash) {
-              ctx.filter = "none";
-            } else {
-              ctx.filter = "hue-rotate(90deg)";
-            }
-            
-            square.x = lerp(square.prevX, square.destX, square.alpha);
-            square.y = lerp(square.prevY, square.destY, square.alpha);
-            
-            ctx.drawImage(avatar, square.x, square.y);
+    const redraw = (time) => {
+      updatePosition();
+      
+      ctx.clearRect(0, 0, 600, 600);
+      ctx.filter = "none";
+      ctx.drawImage(groundImage, 0, 0);
+      
+      const keys = Object.keys(squares);
+      
+      const self = squares[hash];
+      console.log(self.hash);
+      
+      for(let i = 0; i < keys.length; i++) {
+        const square = squares[keys[i]];
+        console.log(square.hash);
+        
+        if(square.alpha < 1) {
+          square.alpha += 0.05;
+        }
+        
+        square.x = lerp(square.prevX, square.destX, square.alpha);
+        square.y = lerp(square.prevY, square.destY, square.alpha);
+        square.cx = square.x + 50;
+        square.cy = square.y + 50;
+        
+        console.log(square.x);
+        console.log(square.y);
+        console.log(square.cx);
+        console.log(square.cy);
+        
+                
+        if(square.hash !== self.hash) {
+          if(Math.abs(self.cx - square.cx) < self.r && Math.abs(self.cy - square.cy) < self.r) {
+            square.colliding = true;
+            self.colliding = true;
+            console.log("POO");
           }
-          
-          const textKeys = Object.keys(texts);
-          
-          for(let i = 0; i < textKeys.length; i++) {
-            const text = texts[textKeys[i]];
-            ctx.fillText(text.txt, 10, 440 + ((i % 10) * 15));
+          else {
+            square.colliding = false;
+            self.colliding = false;
           }
-          requestAnimationFrame(redraw);
-        };
+        }
+        
+        if(self.colliding === true) {
+          ctx.filter = "hue-rotate(90deg)";
+        }
+        
+        ctx.drawImage(avatar, square.x, square.y);
+      }
+      
+      const textKeys = Object.keys(texts);
+      
+      for(let i = 0; i < textKeys.length; i++) {
+        const text = texts[textKeys[i]];
+        ctx.fillText(text.txt, 10, 440 + ((i % 10) * 15));
+      }
+      requestAnimationFrame(redraw);
+    };
 
-        const keyDownHandler = (e) => {
-          let keyPressed = e.which;
-          const square = squares[hash];
-          
-          if(keyPressed === 87 || keyPressed === 38) {
-            square.moveUp = true;
-          }
-          else if(keyPressed === 65 || keyPressed === 37) {
-            square.moveLeft = true;
-          }
-          else if(keyPressed === 83 || keyPressed === 40) {
-            square.moveDown = true;
-          }
-          else if(keyPressed === 68 || keyPressed === 39) {
-            square.moveRight = true;
-          }
-          
-          if(square.moveUp || square.moveDown || square.moveLeft || square.moveRight) {
-            e.preventDefault();
-          }
-        };
+    const keyDownHandler = (e) => {
+      let keyPressed = e.which;
+      const square = squares[hash];
 
-        const keyUpHandler = (e) => {
-          let keyPressed = e.which;
-          const square = squares[hash];
-          
-          if(keyPressed === 87 || keyPressed === 38) {
-            square.moveUp = false;
-          }
-          else if(keyPressed === 65 || keyPressed === 37) {
-            square.moveLeft = false;
-          }
-          else if(keyPressed === 83 || keyPressed === 40) {
-            square.moveDown = false;
-          }
-          else if(keyPressed === 68 || keyPressed === 39) {
-            square.moveRight = false;
-          }
-        };
+      if(keyPressed === 87 || keyPressed === 38) {
+        square.moveUp = true;
+      }
+      else if(keyPressed === 65 || keyPressed === 37) {
+        square.moveLeft = true;
+      }
+      else if(keyPressed === 83 || keyPressed === 40) {
+        square.moveDown = true;
+      }
+      else if(keyPressed === 68 || keyPressed === 39) {
+        square.moveRight = true;
+      }
+      
+      if(square.moveUp || square.moveDown || square.moveLeft || square.moveRight) {
+        e.preventDefault();
+      }
+    };
 
-        const sendChat = (e) => {
-          let text = document.querySelector("#chatText").value;
-          socket.emit('textUpdate', text);
-          e.preventDefault();
-          return false;
-        };
+    const keyUpHandler = (e) => {
+      let keyPressed = e.which;
+      const square = squares[hash];
+      
+      if(keyPressed === 87 || keyPressed === 38) {
+        square.moveUp = false;
+      }
+      else if(keyPressed === 65 || keyPressed === 37) {
+        square.moveLeft = false;
+      }
+      else if(keyPressed === 83 || keyPressed === 40) {
+        square.moveDown = false;
+      }
+      else if(keyPressed === 68 || keyPressed === 39) {
+        square.moveRight = false;
+      }
+    };
 
-        const init = () => {
-          groundImage = document.querySelector('#background');
-          avatar = document.querySelector('#avatar');
-          chatbox = document.querySelector('#chat');
-          
-          canvas = document.querySelector('#canvas');
-          ctx = canvas.getContext('2d');
-          ctx.font = "12px Arial";
-          
-          socket = io.connect();
-          
-          socket.on('joined', setUser);
-          
-          socket.on('updatedMovement', update);
-          
-          socket.on('disconnect', removeUser);
-          
-          socket.on('updatedText', updateText);
-          
-          document.body.addEventListener('keydown', keyDownHandler);
-          document.body.addEventListener('keyup', keyUpHandler);
-          chatbox.addEventListener('submit', sendChat);
-        };
+    const sendChat = (e) => {
+      let text = document.querySelector("#chatText").value;
+      socket.emit('textUpdate', text);
+      e.preventDefault();
+      return false;
+    };
 
-      window.onload = init;
-    </script>
+    const init = () => {
+      groundImage = document.querySelector('#background');
+      avatar = document.querySelector('#avatar');
+      chatbox = document.querySelector('#chat');
+      
+      canvas = document.querySelector('#canvas');
+      ctx = canvas.getContext('2d');
+      ctx.font = "12px Arial";
+      
+      socket = io.connect();
+      
+      socket.on('joined', setUser);
+      
+      socket.on('updatedMovement', update);
+      
+      socket.on('disconnect', removeUser);
+      
+      socket.on('updatedText', updateText);
+      
+      document.body.addEventListener('keydown', keyDownHandler);
+      document.body.addEventListener('keyup', keyUpHandler);
+      chatbox.addEventListener('submit', sendChat);
+    };
+
+    window.onload = init;
+  </script>
 </head>
 <body>
 	<canvas id="canvas" height="600" width="600"></canvas>

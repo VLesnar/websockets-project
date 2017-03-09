@@ -41,6 +41,9 @@ io.on('connection', (sock) => {
     lastUpdate: new Date().getTime(),
     x: 0,
     y: 0,
+    r: 100,
+    cx: 50,
+    cy: 50,
     prevX: 0,
     prevY: 0,
     destX: 0,
@@ -52,6 +55,7 @@ io.on('connection', (sock) => {
     moveRight: false,
     moveUp: false,
     moveDown: false,
+    colliding: false,
   };
 
   socket.on('movementUpdate', (data) => {
