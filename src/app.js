@@ -30,15 +30,20 @@ const handler = (request, response) => {
 const app = http.createServer(handler);
 const io = socketio(app);
 
+let playerCount = 0;
+
 app.listen(port);
 
 io.on('connection', (sock) => {
   const socket = sock;
   socket.join('room1');
+  
+  playerCount++;
 
   socket.square = {
     hash: xxh.h32(`${socket.id}${Date.now()}`, 0xCAFEBABE).toString(16),
     lastUpdate: new Date().getTime(),
+    name: `player${playerCount}`,
     x: 0,
     y: 0,
     r: 100,
@@ -67,10 +72,14 @@ io.on('connection', (sock) => {
   });
 
   socket.on('textUpdate', (data) => {
-    let text = data;
-    console.log(text);
+    const text = `${socket.square.name}: ${data}`;
     io.sockets.in('room1').emit('updatedText', text);
   });
+  
+  socket.on('nameUpdate', (data) => {
+    socket.square.name = data;
+    io.sockets.in('room1').emit('updatedName', socket.square);
+  }
 
   socket.on('disconnect', () => {
     io.sockets.in('room1').emit('disconnect', socket.square.hash);
@@ -79,6 +88,7 @@ io.on('connection', (sock) => {
   });
 
   socket.emit('joined', socket.square);
+  socket.broadcast.to('room1').emit('updatedText', `${socket.square.name} has joined the room`);
 });
 
 console.log(`Listening on port: ${port}`);

@@ -34,14 +34,13 @@
     let avatar;
     let groundImage;
     let chatbox;
+    let nameChange;
     let socket;
     let hash;
-    let squares = {};
-    let texts = [];
-    
+    let squares = {}; // Holds user characters
+    let texts = []; // Holds messages from users
 
-    let count = 0;
-
+    // Update user data
     const update = (data) => {
       if(!squares[data.hash]) {
         squares[data.hash] = data;
@@ -63,11 +62,20 @@
       square.moveRight = data.moveRight;
       square.moveUp = data.moveUp;
       square.moveDown = data.moveDown;
+      square.colliding = data.colliding;
+      square.engaged = data.engaged;
     };
 
+    // Add message to array
+    const updateText = (data) => {
+      texts.unshift(data);
+    };
+
+    // Set the user information
     const setUser = (data) => {
       hash = data.hash;
       squares[hash] = data;
+      texts.unshift(`You have joined the room`);
       requestAnimationFrame(redraw);
     };
 
@@ -105,10 +113,6 @@
       socket.emit('movementUpdate', square);
     };
 
-    const updateText = (data) => {
-      texts.unshift(data);
-    };
-
     const redraw = (time) => {
       updatePosition();
       
@@ -117,8 +121,6 @@
       ctx.drawImage(groundImage, 0, 0);
       
       const keys = Object.keys(squares);
-      
-      const self = squares[hash];
       
       for(let i = 0; i < keys.length; i++) {
         const square = squares[keys[i]];
@@ -132,7 +134,7 @@
         square.cx = square.x + 50;
         square.cy = square.y + 50;
                       
-        if(square.hash !== self.hash) {
+        /*if(square.hash !== self.hash) {
           if(Math.abs(self.cx - square.cx) < self.r && Math.abs(self.cy - square.cy) < self.r) {
             square.colliding = true;
             self.colliding = true;
@@ -145,17 +147,17 @@
          
         if(self.colliding === true) {
           ctx.filter = "hue-rotate(90deg)";
-        }
+        }*/
         
         ctx.drawImage(avatar, square.x, square.y);
       }
-      console.log(`Before loop: ${texts.length}`);
       
+      // Add message to screen - Show only 10 most recent messages
       if(texts.length > 10) {
         texts.pop();
       }
+      
       for(let i = 0; i < texts.length; i++) {
-        console.log(`After loop: ${texts.length}`);
         const text = texts[texts.length - i - 1];
         if(text) {
           ctx.fillText(text, 10, 450 + ((i % 10) * 15));
@@ -224,10 +226,18 @@
       return false;
     };
 
+    const sendName = (e) => {
+      let name = document.querySelector("#username").value;
+      socket.emit('nameUpdate', name);
+      e.preventDefault();
+      return false;
+    };
+
     const init = () => {
       groundImage = document.querySelector('#background');
       avatar = document.querySelector('#avatar');
       chatbox = document.querySelector('#chat');
+      nameChange = document.querySelector('#name');
       
       canvas = document.querySelector('#canvas');
       ctx = canvas.getContext('2d');
@@ -243,9 +253,12 @@
       
       socket.on('updatedText', updateText);
       
+      socket.on('updatedName', updateName);
+      
       document.body.addEventListener('keydown', keyDownHandler);
       document.body.addEventListener('keyup', keyUpHandler);
       chatbox.addEventListener('submit', sendChat);
+      nameChange.addEventListener('submit', sendName);
     };
 
     window.onload = init;
@@ -258,6 +271,10 @@
   <form id="chat">
     <input id="chatText" type="text" />
     <input type="submit" />
+  </form>
+  <form id="name">
+    <input id="username" type="text" />
+    <input type="Change Name" />
   </form>
   <p>This is the barebones for my websockets project - A game of rock, paper, scissors.</p>
   <p>Users will be able to move around and "engage" a player in a quick-fire game, and are can chat with each other.</p>
