@@ -67,11 +67,9 @@ io.on('connection', (sock) => {
   });
 
   socket.on('textUpdate', (data) => {
-    socket.text = {
-      hash: xxh.h32(`${data}${Date.now()}`, 0xCAFEBABE).toString(16),
-      txt: data,
-    };
-    io.sockets.in('room1').emit('updatedText', socket.text);
+    let text = data;
+    console.log(text);
+    io.sockets.in('room1').emit('updatedText', text);
   });
 
   socket.on('disconnect', () => {

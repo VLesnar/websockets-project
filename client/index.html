@@ -37,7 +37,9 @@
     let socket;
     let hash;
     let squares = {};
-    let texts = {};
+    let texts = [];
+    
+
     let count = 0;
 
     const update = (data) => {
@@ -104,19 +106,7 @@
     };
 
     const updateText = (data) => {
-      if(count > 9) {
-        count = 0;
-      }
-      texts[count] = data;
-      count++;
-    };
-
-    const updateBattle = (data) => {
-      if(data.hash === self.hash) {
-        self.engaged = true;
-      }
-      
-      requestAnimationFrame(redraw);
+      texts.unshift(data);
     };
 
     const redraw = (time) => {
@@ -159,12 +149,17 @@
         
         ctx.drawImage(avatar, square.x, square.y);
       }
+      console.log(`Before loop: ${texts.length}`);
       
-      const textKeys = Object.keys(texts);
-      
-      for(let i = 0; i < textKeys.length; i++) {
-        const text = texts[textKeys[i]];
-        ctx.fillText(text.txt, 10, 440 + ((i % 10) * 15));
+      if(texts.length > 10) {
+        texts.pop();
+      }
+      for(let i = 0; i < texts.length; i++) {
+        console.log(`After loop: ${texts.length}`);
+        const text = texts[texts.length - i - 1];
+        if(text) {
+          ctx.fillText(text, 10, 450 + ((i % 10) * 15));
+        }
       }
       
       requestAnimationFrame(redraw);
