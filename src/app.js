@@ -56,6 +56,7 @@ io.on('connection', (sock) => {
     moveUp: false,
     moveDown: false,
     colliding: false,
+    engaged: false,
   };
 
   socket.on('movementUpdate', (data) => {

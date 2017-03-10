@@ -111,6 +111,14 @@
       count++;
     };
 
+    const updateBattle = (data) => {
+      if(data.hash === self.hash) {
+        self.engaged = true;
+      }
+      
+      requestAnimationFrame(redraw);
+    };
+
     const redraw = (time) => {
       updatePosition();
       
@@ -121,11 +129,9 @@
       const keys = Object.keys(squares);
       
       const self = squares[hash];
-      console.log(self.hash);
       
       for(let i = 0; i < keys.length; i++) {
         const square = squares[keys[i]];
-        console.log(square.hash);
         
         if(square.alpha < 1) {
           square.alpha += 0.05;
@@ -135,25 +141,18 @@
         square.y = lerp(square.prevY, square.destY, square.alpha);
         square.cx = square.x + 50;
         square.cy = square.y + 50;
-        
-        console.log(square.x);
-        console.log(square.y);
-        console.log(square.cx);
-        console.log(square.cy);
-        
-                
+                      
         if(square.hash !== self.hash) {
           if(Math.abs(self.cx - square.cx) < self.r && Math.abs(self.cy - square.cy) < self.r) {
             square.colliding = true;
             self.colliding = true;
-            console.log("POO");
           }
           else {
             square.colliding = false;
             self.colliding = false;
           }
         }
-        
+         
         if(self.colliding === true) {
           ctx.filter = "hue-rotate(90deg)";
         }
@@ -167,27 +166,40 @@
         const text = texts[textKeys[i]];
         ctx.fillText(text.txt, 10, 440 + ((i % 10) * 15));
       }
+      
       requestAnimationFrame(redraw);
     };
 
     const keyDownHandler = (e) => {
       let keyPressed = e.which;
       const square = squares[hash];
+      
+      if(keyPressed === 32 && square.colliding) {
+        square.engaged = true;
+      }
 
       if(keyPressed === 87 || keyPressed === 38) {
-        square.moveUp = true;
+        if(!square.engaged) {
+          square.moveUp = true;
+        }
       }
       else if(keyPressed === 65 || keyPressed === 37) {
-        square.moveLeft = true;
+        if(!square.engaged) {
+          square.moveLeft = true;
+        }
       }
       else if(keyPressed === 83 || keyPressed === 40) {
-        square.moveDown = true;
+        if(!square.engaged) {
+          square.moveDown = true;
+        }
       }
       else if(keyPressed === 68 || keyPressed === 39) {
-        square.moveRight = true;
+        if(!square.engaged) {
+          square.moveRight = true;
+        }
       }
       
-      if(square.moveUp || square.moveDown || square.moveLeft || square.moveRight) {
+      if(square.moveUp || square.moveDown || square.moveLeft || square.moveRight || keyPressed === 32 || square.engaged) {
         e.preventDefault();
       }
     };
