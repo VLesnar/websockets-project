@@ -37,7 +37,7 @@ app.listen(port);
 io.on('connection', (sock) => {
   const socket = sock;
   socket.join('room1');
-  
+
   playerCount++;
 
   socket.square = {
@@ -62,7 +62,15 @@ io.on('connection', (sock) => {
     moveDown: false,
     colliding: false,
     engaged: false,
+    rock: false,
+    paper: false,
+    scissors: false,
   };
+
+  socket.on('battleUpdate', (data) => {
+    socket.square = data;
+    socket.broadcast.to('room1').emit('updatedBattle', socket.square);
+  });
 
   socket.on('movementUpdate', (data) => {
     socket.square = data;
@@ -75,11 +83,11 @@ io.on('connection', (sock) => {
     const text = `${socket.square.name}: ${data}`;
     io.sockets.in('room1').emit('updatedText', text);
   });
-  
+
   socket.on('nameUpdate', (data) => {
     socket.square.name = data;
     io.sockets.in('room1').emit('updatedName', socket.square);
-  }
+  });
 
   socket.on('disconnect', () => {
     io.sockets.in('room1').emit('disconnect', socket.square.hash);

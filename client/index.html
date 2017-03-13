@@ -64,11 +64,19 @@
       square.moveDown = data.moveDown;
       square.colliding = data.colliding;
       square.engaged = data.engaged;
+      
+      self = square;
     };
 
     // Add message to array
     const updateText = (data) => {
       texts.unshift(data);
+    };
+
+    const updateBattle = (data) => {
+      if(self.hash == data.hash) {
+        self.colliding = true;
+      }
     };
 
     // Set the user information
@@ -134,20 +142,15 @@
         square.cx = square.x + 50;
         square.cy = square.y + 50;
                       
-        /*if(square.hash !== self.hash) {
+        if(square.hash !== self.hash) {
           if(Math.abs(self.cx - square.cx) < self.r && Math.abs(self.cy - square.cy) < self.r) {
-            square.colliding = true;
-            self.colliding = true;
-          }
-          else {
-            square.colliding = false;
-            self.colliding = false;
+            socket.emit('battleUpdate', self);
           }
         }
          
         if(self.colliding === true) {
           ctx.filter = "hue-rotate(90deg)";
-        }*/
+        }
         
         ctx.drawImage(avatar, square.x, square.y);
       }
@@ -217,6 +220,25 @@
       else if(keyPressed === 68 || keyPressed === 39) {
         square.moveRight = false;
       }
+      
+      else if(keyPressed === 49) {
+        square.rock = true;
+        square.paper = false;
+        square.scissors = false;
+        texts.unshift("You have thrown rock");
+      }
+      else if(keyPressed === 50) {
+        square.rock = false;
+        square.paper = true;
+        square.scissors = false;
+        texts.unshift("You have thrown paper");
+      }
+      else if(keyPressed === 51) {
+        square.rock = false;
+        square.paper = false;
+        square.scissors = true;
+        texts.unshift("You have thrown scissors");
+      }
     };
 
     const sendChat = (e) => {
@@ -253,12 +275,11 @@
       
       socket.on('updatedText', updateText);
       
-      socket.on('updatedName', updateName);
+      socket.on('updatedBattle', updateBattle);
       
       document.body.addEventListener('keydown', keyDownHandler);
       document.body.addEventListener('keyup', keyUpHandler);
       chatbox.addEventListener('submit', sendChat);
-      nameChange.addEventListener('submit', sendName);
     };
 
     window.onload = init;
@@ -272,15 +293,10 @@
     <input id="chatText" type="text" />
     <input type="submit" />
   </form>
-  <form id="name">
-    <input id="username" type="text" />
-    <input type="Change Name" />
-  </form>
-  <p>This is the barebones for my websockets project - A game of rock, paper, scissors.</p>
+  <p>This is an update for my websockets project - A game of Rock, Paper, Scissors.</p>
   <p>Users will be able to move around and "engage" a player in a quick-fire game, and are can chat with each other.</p>
-  <p>Currently, movement is implemented and the start of a chat system.</p>
-  <p>To be implemented: Engaging a player; Timed rock, paper, scissors game; Win-Lose scores for each user</p>
-  <p>To be fixed: Chat (currently doesn't update in the correct order, should be ordered newest text at bottom and only display
-  up to 10 lines)</p>
+  <p>Currently, movement is implemented, the ability to chat, and the basis for Rock, Paper, Scissors.</p>
+  <p>To be implemented: Timed rock, paper, scissors game; Win-Lose scores for each user; Changing username</p>
+  <p>To be fixed: Engaging a player - Collisions behaving improperly</p>
 </body>
 </html>
